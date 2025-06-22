@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindFlow.AI - AI-Powered Diagram Creation</title>
+    <meta name="description" content="Convert natural language descriptions into beautiful diagrams using AI">
+    
+    <!-- Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <h1 class="title">
+                    <span class="icon">🧠</span>
+                    MindFlow.AI
+                </h1>
+                <p class="subtitle">Transform natural language into beautiful diagrams using AI</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Input Section -->
+            <section class="input-section">
+                <div class="form-container">
+                    <form id="diagramForm" class="diagram-form">
+                        <div class="form-group">
+                            <label for="description" class="form-label">
+                                Describe your diagram in plain English
+                            </label>
+                            <textarea 
+                                id="description" 
+                                name="description" 
+                                class="form-textarea"
+                                placeholder="Example: Create a flowchart showing the process of user registration: user fills form, system validates data, creates account, sends confirmation email"
+                                rows="4"
+                                required
+                                maxlength="2000"
+                            ></textarea>
+                            <div class="character-count">
+                                <span id="charCount">0</span>/2000 characters
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="diagramType" class="form-label">Diagram Type</label>
+                                <select id="diagramType" name="diagramType" class="form-select">
+                                    <option value="auto">Auto-detect</option>
+                                    <option value="flowchart">Flowchart</option>
+                                    <option value="class">Class Diagram</option>
+                                    <option value="sequence">Sequence Diagram</option>
+                                    <option value="er">Entity Relationship</option>
+                                    <option value="state">State Diagram</option>
+                                    <option value="gantt">Gantt Chart</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <button type="submit" class="btn btn-primary" id="generateBtn">
+                                    <span class="btn-text">Generate Diagram</span>
+                                    <span class="btn-loading" style="display: none;">
+                                        <span class="spinner"></span>
+                                        Generating...
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <!-- Examples Section -->
+                    <div class="examples-section">
+                        <h3 class="examples-title">Quick Examples</h3>
+                        <div class="examples-grid" id="examplesGrid">
+                            <!-- Examples will be loaded dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Output Section -->
+            <section class="output-section">
+                <!-- Loading State -->
+                <div id="loadingState" class="loading-state" style="display: none;">
+                    <div class="loading-content">
+                        <div class="loading-spinner"></div>
+                        <p>Generating your diagram...</p>
+                    </div>
+                </div>
+
+                <!-- Error State -->
+                <div id="errorState" class="error-state" style="display: none;">
+                    <div class="error-content">
+                        <div class="error-icon">⚠️</div>
+                        <h3>Generation Failed</h3>
+                        <p id="errorMessage"></p>
+                        <button class="btn btn-secondary" onclick="clearError()">Try Again</button>
+                    </div>
+                </div>
+
+                <!-- Success State -->
+                <div id="successState" class="success-state" style="display: none;">
+                    <div class="result-header">
+                        <h3>Generated Diagram</h3>
+                        <div class="result-actions">
+                            <button class="btn btn-secondary" onclick="copyCode()">
+                                📋 Copy Code
+                            </button>
+                            <button class="btn btn-secondary" onclick="downloadSVG()">
+                                💾 Download SVG
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Diagram Preview -->
+                    <div class="diagram-container">
+                        <div id="diagramPreview" class="diagram-preview"></div>
+                    </div>
+
+                    <!-- Generated Code -->
+                    <div class="code-section">
+                        <div class="code-header">
+                            <h4>Generated Code</h4>
+                            <button class="btn btn-small" onclick="toggleCode()">
+                                <span id="toggleCodeText">Show Code</span>
+                            </button>
+                        </div>
+                        <div id="codeContainer" class="code-container" style="display: none;">
+                            <pre><code id="generatedCode" class="diagram-code"></code></pre>
+                        </div>
+                    </div>
+
+                    <!-- Metadata -->
+                    <div class="metadata-section">
+                        <div class="metadata-grid">
+                            <div class="metadata-item">
+                                <span class="metadata-label">Generation Time:</span>
+                                <span id="generationTime">-</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Diagram Type:</span>
+                                <span id="detectedType">-</span>
+                            </div>
+                            <div class="metadata-item">
+                                <span class="metadata-label">Code Length:</span>
+                                <span id="codeLength">-</span>
+                            </div>
+                        </div>
+                        <div id="warningsContainer" class="warnings-container" style="display: none;">
+                            <h5>⚠️ Warnings:</h5>
+                            <ul id="warningsList"></ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 MindFlow.AI. Powered by Google Gemini AI.</p>
+                <div class="footer-links">
+                    <a href="#" onclick="showAbout()">About</a>
+                    <a href="#" onclick="showHelp()">Help</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Modals -->
+    <div id="aboutModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>About MindFlow.AI</h3>
+                <button class="modal-close" onclick="closeModal('aboutModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>MindFlow.AI uses Google's Gemini AI to convert natural language descriptions into professional diagram code.</p>
+                <p><strong>Supported Diagram Types:</strong></p>
+                <ul>
+                    <li>Flowcharts - Process flows and decision trees</li>
+                    <li>Class Diagrams - Object-oriented design</li>
+                    <li>Sequence Diagrams - Time-ordered interactions</li>
+                    <li>Entity Relationship - Database schemas</li>
+                    <li>State Diagrams - State machines and transitions</li>
+                    <li>Gantt Charts - Project timelines</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
