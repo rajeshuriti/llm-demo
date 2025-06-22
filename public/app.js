@@ -28,11 +28,27 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize the application
     initializeApplication();
+
+    // Add mouse wheel zoom support
+    if (diagramPreview) {
+        diagramPreview.addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        });
+    }
 });
 
 // Application state
 let currentDiagramCode = '';
 let currentDiagramId = '';
+let currentZoomLevel = 1.0;
 
 // DOM elements
 const form = document.getElementById('diagramForm');
@@ -43,6 +59,9 @@ const loadingState = document.getElementById('loadingState');
 const errorState = document.getElementById('errorState');
 const successState = document.getElementById('successState');
 const diagramPreview = document.getElementById('diagramPreview');
+const diagramViewport = document.getElementById('diagramViewport');
+const zoomControls = document.getElementById('zoomControls');
+const zoomLevel = document.getElementById('zoomLevel');
 const generatedCode = document.getElementById('generatedCode');
 const codeContainer = document.getElementById('codeContainer');
 const examplesGrid = document.getElementById('examplesGrid');
@@ -131,13 +150,17 @@ async function displayDiagram(data, metadata) {
         currentDiagramId = 'diagram-' + Date.now();
 
         // Clear previous diagram
-        diagramPreview.innerHTML = '';
+        diagramViewport.innerHTML = '';
+
+        // Reset zoom
+        currentZoomLevel = 1.0;
+        updateZoomDisplay();
 
         // Create container for the diagram
         const diagramContainer = document.createElement('div');
         diagramContainer.id = currentDiagramId;
-        diagramContainer.className = 'diagram-container';
-        diagramPreview.appendChild(diagramContainer);
+        diagramContainer.className = 'diagram-content';
+        diagramViewport.appendChild(diagramContainer);
 
         // Render the diagram using the correct Mermaid v10+ API
         try {
@@ -159,6 +182,9 @@ async function displayDiagram(data, metadata) {
 
         // Update metadata
         updateMetadata(data, metadata);
+
+        // Show zoom controls
+        zoomControls.style.display = 'flex';
 
         // Show success state
         showSuccess();
@@ -306,6 +332,11 @@ function hideAllStates() {
     loadingState.style.display = 'none';
     errorState.style.display = 'none';
     successState.style.display = 'none';
+
+    // Hide zoom controls when no diagram is displayed
+    if (zoomControls) {
+        zoomControls.style.display = 'none';
+    }
 }
 
 // Reset button state
@@ -325,9 +356,51 @@ function clearError() {
 
 // Toggle code visibility
 function toggleCode() {
+    if (!codeContainer) {
+        console.error('Code container not found');
+        return;
+    }
+
     const isVisible = codeContainer.style.display !== 'none';
     codeContainer.style.display = isVisible ? 'none' : 'block';
-    document.getElementById('toggleCodeText').textContent = isVisible ? 'Show Code' : 'Hide Code';
+
+    const toggleText = document.getElementById('toggleCodeText');
+    if (toggleText) {
+        toggleText.textContent = isVisible ? 'Show Code' : 'Hide Code';
+    }
+}
+
+// Zoom functionality
+function zoomIn() {
+    if (currentZoomLevel < 3.0) {
+        currentZoomLevel += 0.2;
+        applyZoom();
+    }
+}
+
+function zoomOut() {
+    if (currentZoomLevel > 0.4) {
+        currentZoomLevel -= 0.2;
+        applyZoom();
+    }
+}
+
+function resetZoom() {
+    currentZoomLevel = 1.0;
+    applyZoom();
+}
+
+function applyZoom() {
+    if (diagramViewport) {
+        diagramViewport.style.transform = `scale(${currentZoomLevel})`;
+        updateZoomDisplay();
+    }
+}
+
+function updateZoomDisplay() {
+    if (zoomLevel) {
+        zoomLevel.textContent = `${Math.round(currentZoomLevel * 100)}%`;
+    }
 }
 
 // Copy code to clipboard
@@ -367,34 +440,63 @@ function downloadSVG() {
         alert('No diagram to download');
         return;
     }
-    
+
     try {
-        const svgElement = document.querySelector(`#${currentDiagramId} svg`);
+        // Look for SVG in the new diagram structure
+        let svgElement = document.querySelector(`#${currentDiagramId} svg`);
+
+        // Fallback: look for any SVG in the diagram viewport
         if (!svgElement) {
-            throw new Error('SVG not found');
+            svgElement = diagramViewport.querySelector('svg');
         }
-        
+
+        // Another fallback: look for any SVG in the diagram preview
+        if (!svgElement) {
+            svgElement = diagramPreview.querySelector('svg');
+        }
+
+        if (!svgElement) {
+            throw new Error('SVG not found. Please ensure a diagram is generated first.');
+        }
+
         // Clone and prepare SVG for download
         const svgClone = svgElement.cloneNode(true);
         svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-        
+
+        // Ensure proper SVG attributes
+        if (!svgClone.getAttribute('width')) {
+            svgClone.setAttribute('width', svgElement.getBoundingClientRect().width);
+        }
+        if (!svgClone.getAttribute('height')) {
+            svgClone.setAttribute('height', svgElement.getBoundingClientRect().height);
+        }
+
         // Create download link
         const svgData = new XMLSerializer().serializeToString(svgClone);
-        const blob = new Blob([svgData], { type: 'image/svg+xml' });
+        const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
-        
+
         const link = document.createElement('a');
         link.href = url;
         link.download = 'mindflow-diagram.svg';
+        link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-        
+
         URL.revokeObjectURL(url);
-        
+
+        // Show success feedback
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅ Downloaded!';
+        setTimeout(() => {
+            btn.textContent = originalText;
+        }, 2000);
+
     } catch (error) {
         console.error('Failed to download SVG:', error);
-        alert('Failed to download diagram. Please try again.');
+        alert(`Failed to download diagram: ${error.message}`);
     }
 }
 

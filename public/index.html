@@ -124,7 +124,24 @@
 
                     <!-- Diagram Preview -->
                     <div class="diagram-container">
-                        <div id="diagramPreview" class="diagram-preview"></div>
+                        <div class="diagram-header">
+                            <h4>Diagram Preview</h4>
+                            <div class="zoom-controls" id="zoomControls" style="display: none;">
+                                <button class="btn btn-small zoom-btn" onclick="zoomOut()" title="Zoom Out">
+                                    <span>🔍−</span>
+                                </button>
+                                <span class="zoom-level" id="zoomLevel">100%</span>
+                                <button class="btn btn-small zoom-btn" onclick="zoomIn()" title="Zoom In">
+                                    <span>🔍+</span>
+                                </button>
+                                <button class="btn btn-small zoom-btn" onclick="resetZoom()" title="Reset Zoom">
+                                    <span>⚡</span>
+                                </button>
+                            </div>
+                        </div>
+                        <div id="diagramPreview" class="diagram-preview">
+                            <div id="diagramViewport" class="diagram-viewport"></div>
+                        </div>
                     </div>
 
                     <!-- Generated Code -->
