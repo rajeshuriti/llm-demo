@@ -115,7 +115,6 @@ async function handleFormSubmit(e) {
 async function generateDiagram(description, diagramType) {
     try {
         showLoading();
-        
         const response = await fetch('/api/diagrams/generate', {
             method: 'POST',
             headers: {
@@ -126,15 +125,15 @@ async function generateDiagram(description, diagramType) {
                 diagramType
             })
         });
-        
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('API did not return JSON. Please check your deployment.');
+        }
         const result = await response.json();
-        
         if (!result.success) {
             throw new Error(result.details || result.error || 'Failed to generate diagram');
         }
-        
         await displayDiagram(result.data, result.metadata);
-        
     } catch (error) {
         console.error('Error generating diagram:', error);
         showError(error.message || 'Failed to generate diagram. Please try again.');
